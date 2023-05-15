@@ -47,7 +47,7 @@ class Ram extends Parts{
 
     // 最後のスペック取得
     getSpec(model){
-        return parseInt(model.split(" ").pop()[0])
+        return model.split(" ").pop()[0]
     }
 
     // sortList
@@ -59,6 +59,29 @@ class Ram extends Parts{
         }
         this.sortList = [...amountList]
         this.sortList.sort((a, b)=>a-b)
+    }
+
+    // brand描画
+    setBrand(amount){
+        const brandSelectTag = this.element.querySelectorAll(".brand")[0];
+        const list = this.keys.get(amount);
+        const drawBrandList = new Set();
+        list.forEach(e=>{
+            drawBrandList.add(e.Brand)
+        })
+        drawBrandList.forEach(e=>{
+            const option = document.createElement("option");
+            option.value = e;
+            option.innerHTML = e;
+            brandSelectTag.append(option);
+        })
+    }
+
+    reset(){
+        const brand = this.element.querySelectorAll(".brand")[0];
+        const model = this.element.querySelectorAll(".model")[0];
+        brand.innerHTML = "";
+        model.innerHTML = "";
     }
 }
 
@@ -109,7 +132,7 @@ class View{
             <label for="step-2">Brand</label>
             <select name="" id="step-2" class="brand col-3"></select>
             <label for="step-2">Model</label>
-            <select name="" id="step-2" class="col-3"></select>
+            <select name="" id="step-2" class="model col-3"></select>
             `;
             
             ele.element.append(container)
@@ -141,9 +164,10 @@ class Ctrl{
             amountSelectTag.append(option);
         })
 
+        // setBrand
         amountSelectTag.addEventListener('change', e=>{
-            // setBrand
-            console.log(e.target.value)
+            ram.reset();
+            ram.setBrand(e.target.value)
         })
     }
 
