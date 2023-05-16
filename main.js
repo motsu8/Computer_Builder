@@ -6,7 +6,13 @@ class Parts {
     constructor(parts) {
         this.parts = parts;
         this.element = document.getElementById(parts)
+        this.brandTag = null;
+        this.modelTag = null;
         this.list = this.getData();
+        this.currentBrand = null;
+        this.currentModel = null;
+        this.drawBrandList = null;
+        this.drawModelList = null;
     }
 
     getData() {
@@ -20,6 +26,58 @@ class Parts {
                 });
         return list;
     }
+
+    setTag(){
+        this.brandTag = this.element.querySelectorAll(".brand")[0];
+        this.modelTag = this.element.querySelectorAll(".model")[0];
+        this.amountTag = this.element.querySelectorAll(".amount")[0];
+    }
+
+    checkCurrent(){
+        console.log(`(Amount: ${this.currentAmount}), (Brand: ${this.currentBrand}), (Model: ${this.currentModel}), `)
+    }
+
+    // brand描画
+    setBrand(){
+        this.drawBrandList = new Set();
+        this.list.forEach(e=>{
+            this.drawBrandList.add(e.Brand)
+        })
+        this.drawBrandList.forEach(e=>{
+            const option = document.createElement("option");
+            option.value = e;
+            option.innerHTML = e;
+            this.brandTag.append(option);
+        })
+    }
+    // model描画
+    setModel(){
+        this.drawModelList = new Set();
+        this.list.forEach(e=>{
+            if(e.Brand == this.currentBrand) this.drawModelList.add(e.Model)
+        })
+        console.log(this.drawBrandList)
+        this.drawModelList.forEach(e=>{
+            const option = document.createElement("option");
+            option.value = e;
+            option.innerHTML = e;
+            this.modelTag.append(option);
+        })
+    }
+
+    resetBrand(){
+        this.brandTag.innerHTML = "";
+        const option = document.createElement("option");
+        option.innerHTML = "-";
+        this.brandTag.append(option);
+    }
+
+    resetModel(){
+        this.modelTag.innerHTML = "";
+        const option = document.createElement("option");
+        option.innerHTML = "-";
+        this.modelTag.append(option);
+    }
 }
 
 class Ram extends Parts{
@@ -27,6 +85,8 @@ class Ram extends Parts{
         super(parts)
         this.keys = new Map();
         this.sortList = []
+        this.currentAmount = null;
+        this.amountTag = null;
     }
 
     init(){
@@ -62,9 +122,8 @@ class Ram extends Parts{
     }
 
     // brand描画
-    setBrand(amount){
-        const brandSelectTag = this.element.querySelectorAll(".brand")[0];
-        const list = this.keys.get(amount);
+    setBrand(){
+        const list = this.keys.get(this.currentAmount);
         const drawBrandList = new Set();
         list.forEach(e=>{
             drawBrandList.add(e.Brand)
@@ -73,15 +132,23 @@ class Ram extends Parts{
             const option = document.createElement("option");
             option.value = e;
             option.innerHTML = e;
-            brandSelectTag.append(option);
+            this.brandTag.append(option);
         })
     }
 
-    reset(){
-        const brand = this.element.querySelectorAll(".brand")[0];
-        const model = this.element.querySelectorAll(".model")[0];
-        brand.innerHTML = "";
-        model.innerHTML = "";
+    // model描画
+    setModel(){
+        const list = this.keys.get(this.currentAmount);
+        this.drawModelList = new Set();
+        list.forEach(e=>{
+            if(e.Brand == this.currentBrand) this.drawModelList.add(e.Model)
+        })
+        this.drawModelList.forEach(e=>{
+            const option = document.createElement("option");
+            option.value = e;
+            option.innerHTML = e;
+            this.modelTag.append(option);
+        })
     }
 }
 
@@ -136,6 +203,9 @@ class View{
             `;
             
             ele.element.append(container)
+            
+            // tag指定
+            ele.setTag();
         }
 
         document.querySelectorAll("select").forEach(e=>{
@@ -156,37 +226,50 @@ class Ctrl{
         ram.init();
         
         // amount描画
-        const amountSelectTag = ram.element.querySelectorAll(".amount")[0];
         ram.sortList.forEach(e=>{
             const option = document.createElement("option");
             option.value = e;
             option.innerHTML = e;
-            amountSelectTag.append(option);
+            ram.amountTag.append(option);
         })
 
         // setBrand
-        amountSelectTag.addEventListener('change', e=>{
-            ram.reset();
-            ram.setBrand(e.target.value)
+        ram.amountTag.addEventListener('change', e=>{
+            ram.resetBrand();
+            ram.resetModel();
+            ram.currentAmount = e.target.value
+            ram.setBrand();
+        })
+
+        // setModel
+        ram.brandTag.addEventListener('change', e=>{
+            ram.resetModel();
+            ram.currentBrand = e.target.value
+            ram.setModel();
+        })
+        
+        ram.modelTag.addEventListener('change', e=>{
+            ram.currentModel = e.target.value;
+            ram.checkCurrent();
         })
     }
-
+    
     // CPU | GPU
     static setCore(view){
         for(const ele of view.types){
             if(ele.parts == "cpu" || ele.parts == "gpu"){
-                // 重複なしリスト
-                const brandList = new Set();
-                for(const type of ele.list){
-                    brandList.add(type.Brand)
-                }
-                // brand表示
-                const brandSelectTag = ele.element.querySelectorAll(".brand")[0];
-                brandList.forEach(e=>{
-                    const option = document.createElement("option");
-                    option.value = e;
-                    option.innerHTML = e;
-                    brandSelectTag.append(option)
+                // brand描画
+                ele.setBrand();
+
+                // model描画
+                ele.brandTag.addEventListener("change", e=>{
+                    ele.resetModel();
+                    ele.currentBrand = e.target.value;
+                    ele.setModel();
+                })
+                ele.modelTag.addEventListener("change", e=>{
+                    ele.currentModel = e.target.value
+                    ele.checkCurrent();
                 })
             }
         }
@@ -194,9 +277,9 @@ class Ctrl{
 }
 
 const view = new View();
-view.init()
+view.init();
 
 setTimeout(() => {
-    Ctrl.setCore(view)
-    Ctrl.setRam(view)
+    Ctrl.setCore(view);
+    Ctrl.setRam(view);
 }, 100);
