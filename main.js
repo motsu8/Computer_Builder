@@ -30,11 +30,17 @@ class Parts {
     setTag(){
         this.brandTag = this.element.querySelectorAll(".brand")[0];
         this.modelTag = this.element.querySelectorAll(".model")[0];
-        this.amountTag = this.element.querySelectorAll(".amount")[0];
     }
 
     checkCurrent(){
-        console.log(`(Amount: ${this.currentAmount}), (Brand: ${this.currentBrand}), (Model: ${this.currentModel}), `)
+        console.log(`(Model: ${this.currentModel}), `)
+    }
+
+    createOption(e){
+        const option = document.createElement("option");
+        option.value = e;
+        option.innerHTML = e;
+        return option
     }
 
     // brand描画
@@ -44,39 +50,29 @@ class Parts {
             this.drawBrandList.add(e.Brand)
         })
         this.drawBrandList.forEach(e=>{
-            const option = document.createElement("option");
-            option.value = e;
-            option.innerHTML = e;
-            this.brandTag.append(option);
+            this.brandTag.append(this.createOption(e));
         })
     }
+
     // model描画
     setModel(){
         this.drawModelList = new Set();
         this.list.forEach(e=>{
             if(e.Brand == this.currentBrand) this.drawModelList.add(e.Model)
         })
-        console.log(this.drawBrandList)
         this.drawModelList.forEach(e=>{
-            const option = document.createElement("option");
-            option.value = e;
-            option.innerHTML = e;
-            this.modelTag.append(option);
+            this.modelTag.append(this.createOption(e));
         })
     }
 
     resetBrand(){
         this.brandTag.innerHTML = "";
-        const option = document.createElement("option");
-        option.innerHTML = "-";
-        this.brandTag.append(option);
+        this.brandTag.append(this.createOption("-"));
     }
 
     resetModel(){
         this.modelTag.innerHTML = "";
-        const option = document.createElement("option");
-        option.innerHTML = "-";
-        this.modelTag.append(option);
+        this.modelTag.append(this.createOption("-"));
     }
 }
 
@@ -92,6 +88,12 @@ class Ram extends Parts{
     init(){
         this.getKeys();
         this.getSortList();
+    }
+
+    setTag(){
+        this.brandTag = this.element.querySelectorAll(".brand")[0];
+        this.modelTag = this.element.querySelectorAll(".model")[0];
+        this.amountTag = this.element.querySelectorAll(".amount")[0];
     }
 
     getKeys(){
@@ -129,10 +131,7 @@ class Ram extends Parts{
             drawBrandList.add(e.Brand)
         })
         drawBrandList.forEach(e=>{
-            const option = document.createElement("option");
-            option.value = e;
-            option.innerHTML = e;
-            this.brandTag.append(option);
+            this.brandTag.append(this.createOption(e));
         })
     }
 
@@ -144,10 +143,7 @@ class Ram extends Parts{
             if(e.Brand == this.currentBrand) this.drawModelList.add(e.Model)
         })
         this.drawModelList.forEach(e=>{
-            const option = document.createElement("option");
-            option.value = e;
-            option.innerHTML = e;
-            this.modelTag.append(option);
+            this.modelTag.append(this.createOption(e));
         })
     }
 }
@@ -159,7 +155,89 @@ class Storage extends Parts{
             new Parts("hdd"),
             new Parts("ssd"),
         ]
+        this.currentType = null;
+        this.currentCapacity = null;
+        this.typeTag = null;
+        this.capacityTag = null;
     }
+
+    // tag設定
+    setTag(){
+        this.typeTag = this.element.querySelectorAll(".type")[0];
+        this.capacityTag = this.element.querySelectorAll(".capacity")[0];
+        this.brandTag = this.element.querySelectorAll(".brand")[0];
+        this.modelTag = this.element.querySelectorAll(".model")[0];
+    }
+
+    // 現在のtype更新
+    setCurrentType(type){
+        this.currentType = this.types.filter(e=>e.parts == type.toLowerCase()).pop()
+    }
+
+    // 現在のcapacity更新
+    setCurrentCapacity(capacity){
+        this.currentCapacity = [];
+        this.currentType.list.forEach(e=>{
+            if(e.Model.includes(capacity)) this.currentCapacity.push(e);
+        });
+    }
+
+    // 現在のbrand更新
+    setCurrentBrand(brand){
+        this.currentBrand = [];
+        this.currentCapacity.forEach(e=>{
+            if(e.Brand.includes(brand)) this.currentBrand.push(e);
+        });
+    }
+    
+    // 現在のmodel更新
+    setCurrentModel(model){
+        this.currentModel = [];
+        this.currentBrand.forEach(e=>{
+            if(e.Model.includes(model)) this.currentModel.push(e);
+        });
+        console.log(this.currentModel)
+    }
+
+    resetCapacity(){
+        this.capacityTag.innerHTML = "";
+        this.capacityTag.append(this.createOption("-"));
+    }
+
+    // currentTypeをもとにcapacity描画
+    drawCapacity(){
+        const drawList = new Set();
+        for(const ele of this.currentType.list){
+            const capacity = ele.Model.split(" ").filter(e=>e.includes("TB") || e.includes("GB")).pop()
+            drawList.add(capacity);
+        }
+        drawList.forEach(e=>{
+            this.capacityTag.append(this.createOption(e));
+        });
+    }
+
+    // currentCapacityをもとにbrand描画
+    drawBrand(){
+        const drawList = new Set();
+        for(const ele of this.currentCapacity){
+            drawList.add(ele.Brand)
+        }
+        drawList.forEach(e=>{
+            this.brandTag.append(this.createOption(e));
+        })
+    }
+
+    // currentBrandをもとにmodel描画
+    drawModel(){
+        const drawList = new Set();
+        for(const ele of this.currentBrand){
+            drawList.add(ele.Model)
+        }
+        drawList.forEach(e=>{
+            this.modelTag.append(this.createOption(e))
+        })
+    }
+
 }
 
 class View{
@@ -182,10 +260,10 @@ class View{
             switch(ele.parts){
                 case"storage":
                 container.innerHTML += `
-                    <label for="step-2">SSD or HDD</label>
-                    <select name="" id="step-2" class="col-3"></select>
-                    <label for="step-2">Storage</label>
-                    <select name="" id="step-2" class="col-3"></select>
+                    <label for="step-2">HDD or SSD</label>
+                    <select name="" id="step-2" class="type col-3"></select>
+                    <label for="step-2">Capacity</label>
+                    <select name="" id="step-2" class="capacity col-3"></select>
                     `;
                     break;
                 case"ram":
@@ -219,6 +297,12 @@ class View{
 class Ctrl{
     constructor(){}
 
+    static setParts(view){
+        Ctrl.setCore(view);
+        Ctrl.setRam(view);
+        Ctrl.setStorage(view)
+    }
+
     // Ramの描画
     static setRam(view){
         // ram取得
@@ -227,10 +311,7 @@ class Ctrl{
         
         // amount描画
         ram.sortList.forEach(e=>{
-            const option = document.createElement("option");
-            option.value = e;
-            option.innerHTML = e;
-            ram.amountTag.append(option);
+            ram.amountTag.append(ram.createOption(e));
         })
 
         // setBrand
@@ -274,12 +355,59 @@ class Ctrl{
             }
         }
     }
+
+    // storage描画
+    static setStorage(view){
+        // storage取得
+        const storage = view.types.filter(e=>e.parts == "storage").pop()
+
+        // type描画
+        storage.types.forEach(e=>{
+            const option = document.createElement("option");
+            option.value = e.parts.toUpperCase();
+            option.innerHTML = e.parts.toUpperCase();
+            storage.typeTag.append(option);
+        });
+
+        // capacity描画
+        storage.typeTag.addEventListener("change", e=>{
+            // 初期化
+            storage.resetCapacity();
+            storage.resetBrand();
+            storage.resetModel();
+
+            storage.setCurrentType(e.target.value);
+            storage.drawCapacity();
+        });
+
+        // Brand描画
+        storage.capacityTag.addEventListener("change", e=>{
+            // 初期化
+            storage.resetBrand();
+            storage.resetModel();
+
+            storage.setCurrentCapacity(e.target.value);
+            storage.drawBrand();
+        })
+        
+        // Model描画
+        storage.brandTag.addEventListener("change", e=>{
+            storage.setCurrentBrand(e.target.value);
+            storage.drawModel();
+        })
+
+        storage.modelTag.addEventListener("change", e=>{
+            storage.setCurrentModel(e.target.value);
+            storage.checkCurrent();
+        })
+    }
 }
+
+
 
 const view = new View();
 view.init();
 
 setTimeout(() => {
-    Ctrl.setCore(view);
-    Ctrl.setRam(view);
+    Ctrl.setParts(view);
 }, 100);
