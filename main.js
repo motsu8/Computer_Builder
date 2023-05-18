@@ -1,5 +1,6 @@
 const config = {
     url: "https://api.recursionist.io/builder/computers",
+    calcBtn: document.getElementById("calcBtn")
 };
 
 class Parts {
@@ -305,7 +306,13 @@ class View{
             option.innerHTML = "-"
             e.append(option);
         })
+
+        config.calcBtn.addEventListener("click", ()=>{
+            console.log(`game: ${Ctrl.calcGamePerformance(view)}`);
+            console.log(`work: ${Ctrl.calcWorkPerformance(view)}`);
+        })
     }
+
 }
 
 class Ctrl{
@@ -316,8 +323,29 @@ class Ctrl{
         Ctrl.setRam(view);
         Ctrl.setStorage(view)
     }
+    
+    // CPU | GPU
+    static setCore(view){
+        for(const ele of view.types){
+            if(ele.parts == "cpu" || ele.parts == "gpu"){
+                // brand描画
+                ele.drawBrand();
 
-    // Ramの描画
+                // model描画
+                ele.brandTag.addEventListener("change", e=>{
+                    ele.resetModel();
+                    ele.setCurrentBrand(e.target.value);
+                    ele.drawModel();
+                })
+                ele.modelTag.addEventListener("change", e=>{
+                    ele.setCurrentModel(e.target.value);
+                    ele.checkCurrent();
+                })
+            }
+        }
+    }
+
+    // Ram
     static setRam(view){
         // ram取得
         const ram = view.types.filter(e=>e.parts == "ram").pop()
@@ -349,29 +377,8 @@ class Ctrl{
             ram.checkCurrent();
         })
     }
-    
-    // CPU | GPU
-    static setCore(view){
-        for(const ele of view.types){
-            if(ele.parts == "cpu" || ele.parts == "gpu"){
-                // brand描画
-                ele.drawBrand();
 
-                // model描画
-                ele.brandTag.addEventListener("change", e=>{
-                    ele.resetModel();
-                    ele.setCurrentBrand(e.target.value);
-                    ele.drawModel();
-                })
-                ele.modelTag.addEventListener("change", e=>{
-                    ele.setCurrentModel(e.target.value);
-                    ele.checkCurrent();
-                })
-            }
-        }
-    }
-
-    // storage描画
+    // storage
     static setStorage(view){
         // storage取得
         const storage = view.types.filter(e=>e.parts == "storage").pop()
@@ -412,6 +419,38 @@ class Ctrl{
             storage.setCurrentModel(e.target.value);
             storage.checkCurrent();
         })
+    }
+
+    static calcGamePerformance(view){
+        const gamePerformance = Math.floor(view.types.reduce((pre, curr)=>{
+            switch(curr.parts){
+                case"cpu":
+                    return pre + curr.currentModel.Benchmark * 0.25
+                case"gpu":
+                    return pre + curr.currentModel.Benchmark * 0.6
+                case"ram":
+                    return pre + curr.currentModel.Benchmark * 0.125
+                case"storage":
+                    return pre + curr.currentModel.Benchmark * 0.025
+            }
+        }, 0))
+        return gamePerformance;
+    }
+
+    static calcWorkPerformance(view){
+        const workPerformance = Math.floor(view.types.reduce((pre, curr)=>{
+            switch(curr.parts){
+                case"cpu":
+                    return pre + curr.currentModel.Benchmark * 0.6
+                case"gpu":
+                    return pre + curr.currentModel.Benchmark * 0.25
+                case"ram":
+                    return pre + curr.currentModel.Benchmark * 0.1
+                case"storage":
+                    return pre + curr.currentModel.Benchmark * 0.05
+            }
+        }, 0))
+        return workPerformance;
     }
 }
 
