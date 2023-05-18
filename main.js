@@ -11,8 +11,6 @@ class Parts {
         this.list = this.getData();
         this.currentBrand = null;
         this.currentModel = null;
-        this.drawBrandList = null;
-        this.drawModelList = null;
     }
 
     getData() {
@@ -33,7 +31,7 @@ class Parts {
     }
 
     checkCurrent(){
-        console.log(`(Model: ${this.currentModel}), `)
+        console.log(this.currentModel)
     }
 
     createOption(e){
@@ -43,24 +41,37 @@ class Parts {
         return option
     }
 
-    // brand描画
-    setBrand(){
-        this.drawBrandList = new Set();
+    setCurrentBrand(brand){
+        this.currentBrand = [];
         this.list.forEach(e=>{
-            this.drawBrandList.add(e.Brand)
+            if(e.Brand.includes(brand)) this.currentBrand.push(e);
+        });
+    }
+
+    setCurrentModel(model){
+        this.currentBrand.forEach(e=>{
+            if(e.Model.includes(model)) this.currentModel = e;
+        });
+    }
+
+    // brand描画
+    drawBrand(){
+        const drawList = new Set();
+        this.list.forEach(e=>{
+            drawList.add(e.Brand)
         })
-        this.drawBrandList.forEach(e=>{
+        drawList.forEach(e=>{
             this.brandTag.append(this.createOption(e));
         })
     }
 
     // model描画
-    setModel(){
-        this.drawModelList = new Set();
-        this.list.forEach(e=>{
-            if(e.Brand == this.currentBrand) this.drawModelList.add(e.Model)
+    drawModel(){
+        const drawList = new Set();
+        this.currentBrand.forEach(e=>{
+            drawList.add(e.Model)
         })
-        this.drawModelList.forEach(e=>{
+        drawList.forEach(e=>{
             this.modelTag.append(this.createOption(e));
         })
     }
@@ -85,35 +96,39 @@ class Ram extends Parts{
         this.amountTag = null;
     }
 
-    init(){
-        this.getKeys();
-        this.getSortList();
-    }
-
     setTag(){
         this.brandTag = this.element.querySelectorAll(".brand")[0];
         this.modelTag = this.element.querySelectorAll(".model")[0];
         this.amountTag = this.element.querySelectorAll(".amount")[0];
     }
 
-    getKeys(){
-        for(const ele of this.list){
-            const model = this.getSpec(ele.Model)
-            if(!this.keys.has(model)){
-                this.keys.set(model, [ele])
-            }else{
-                this.keys.set(model, [...this.keys.get(model), ele])
-            }
-        }
-    }
-
-    // 最後のスペック取得
+    // model最後の枚数取得
     getSpec(model){
         return model.split(" ").pop()[0]
     }
 
+    setCurrentAmount(amount){
+        this.currentAmount = [];
+        this.list.forEach(e=>{
+            if(this.getSpec(e.Model) == amount) this.currentAmount.push(e);
+        });
+    }
+
+    setCurrentBrand(brand){
+        this.currentBrand = [];
+        this.currentAmount.forEach(e=>{
+            if(e.Brand == brand) this.currentBrand.push(e);
+        });
+    }
+
+    setCurrentModel(model){
+        this.currentBrand.forEach(e=>{
+            if(e.Model == model) this.currentModel = e;
+        })
+    }
+
     // sortList
-    getSortList(){
+    drawAmount(){
         // 重複なしリスト
         const amountList = new Set();
         for(const ramEle of this.list){
@@ -121,13 +136,15 @@ class Ram extends Parts{
         }
         this.sortList = [...amountList]
         this.sortList.sort((a, b)=>a-b)
+        this.sortList.forEach(e=>{
+            this.amountTag.append(this.createOption(e));
+        })
     }
 
     // brand描画
-    setBrand(){
-        const list = this.keys.get(this.currentAmount);
+    drawBrand(){
         const drawBrandList = new Set();
-        list.forEach(e=>{
+        this.currentAmount.forEach(e=>{
             drawBrandList.add(e.Brand)
         })
         drawBrandList.forEach(e=>{
@@ -136,13 +153,12 @@ class Ram extends Parts{
     }
 
     // model描画
-    setModel(){
-        const list = this.keys.get(this.currentAmount);
-        this.drawModelList = new Set();
-        list.forEach(e=>{
-            if(e.Brand == this.currentBrand) this.drawModelList.add(e.Model)
+    drawModel(){
+        const drawModelList = new Set();
+        this.currentBrand.forEach(e=>{
+            drawModelList.add(e.Model)
         })
-        this.drawModelList.forEach(e=>{
+        drawModelList.forEach(e=>{
             this.modelTag.append(this.createOption(e));
         })
     }
@@ -192,11 +208,9 @@ class Storage extends Parts{
     
     // 現在のmodel更新
     setCurrentModel(model){
-        this.currentModel = [];
         this.currentBrand.forEach(e=>{
-            if(e.Model.includes(model)) this.currentModel.push(e);
+            if(e.Model.includes(model)) this.currentModel = e;
         });
-        console.log(this.currentModel)
     }
 
     resetCapacity(){
@@ -307,30 +321,31 @@ class Ctrl{
     static setRam(view){
         // ram取得
         const ram = view.types.filter(e=>e.parts == "ram").pop()
-        ram.init();
-        
+
         // amount描画
-        ram.sortList.forEach(e=>{
-            ram.amountTag.append(ram.createOption(e));
-        })
+        ram.drawAmount();
 
         // setBrand
         ram.amountTag.addEventListener('change', e=>{
+            // 初期化
             ram.resetBrand();
             ram.resetModel();
-            ram.currentAmount = e.target.value
-            ram.setBrand();
+
+            ram.setCurrentAmount(e.target.value);
+            ram.drawBrand();
         })
 
         // setModel
         ram.brandTag.addEventListener('change', e=>{
+            // 初期化
             ram.resetModel();
-            ram.currentBrand = e.target.value
-            ram.setModel();
+
+            ram.setCurrentBrand(e.target.value)
+            ram.drawModel();
         })
         
         ram.modelTag.addEventListener('change', e=>{
-            ram.currentModel = e.target.value;
+            ram.setCurrentModel(e.target.value);
             ram.checkCurrent();
         })
     }
@@ -340,16 +355,16 @@ class Ctrl{
         for(const ele of view.types){
             if(ele.parts == "cpu" || ele.parts == "gpu"){
                 // brand描画
-                ele.setBrand();
+                ele.drawBrand();
 
                 // model描画
                 ele.brandTag.addEventListener("change", e=>{
                     ele.resetModel();
-                    ele.currentBrand = e.target.value;
-                    ele.setModel();
+                    ele.setCurrentBrand(e.target.value);
+                    ele.drawModel();
                 })
                 ele.modelTag.addEventListener("change", e=>{
-                    ele.currentModel = e.target.value
+                    ele.setCurrentModel(e.target.value);
                     ele.checkCurrent();
                 })
             }
@@ -363,10 +378,7 @@ class Ctrl{
 
         // type描画
         storage.types.forEach(e=>{
-            const option = document.createElement("option");
-            option.value = e.parts.toUpperCase();
-            option.innerHTML = e.parts.toUpperCase();
-            storage.typeTag.append(option);
+            storage.typeTag.append(storage.createOption(e.parts.toUpperCase()));
         });
 
         // capacity描画
